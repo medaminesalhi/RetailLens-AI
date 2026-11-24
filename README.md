@@ -1,75 +1,123 @@
-# RetailLens AI
+<div align="center">
+  <img src="src/assets/vv2.jpg" alt="VisShopAI" width="180" />
 
-**Computer vision and multilingual OCR for retail visual analytics.**
+  <h1>RetailLens AI</h1>
+  <p><strong>Computer Vision &amp; Multilingual OCR for Retail Analytics</strong></p>
+  <p>From retail images and videos to structured, searchable visual insights.</p>
+  <p><strong>Summer Internship Project · VisShopAI · 2025</strong></p>
+  <p>
+    <img src="https://img.shields.io/badge/Python-3776AB?style=flat-square&amp;logo=python&amp;logoColor=white" alt="Python" />
+    <img src="https://img.shields.io/badge/React-20232A?style=flat-square&amp;logo=react&amp;logoColor=61DAFB" alt="React" />
+    <img src="https://img.shields.io/badge/Django-092E20?style=flat-square&amp;logo=django&amp;logoColor=white" alt="Django" />
+    <img src="https://img.shields.io/badge/YOLOv8-111827?style=flat-square&amp;logo=ultralytics&amp;logoColor=white" alt="YOLOv8" />
+    <img src="https://img.shields.io/badge/EasyOCR-475569?style=flat-square" alt="EasyOCR" />
+    <img src="https://img.shields.io/badge/OpenCV-5C3EE8?style=flat-square&amp;logo=opencv&amp;logoColor=white" alt="OpenCV" />
+    <img src="https://img.shields.io/badge/MongoDB-00684A?style=flat-square&amp;logo=mongodb&amp;logoColor=white" alt="MongoDB" />
+    <img src="https://img.shields.io/badge/Tailwind_CSS-0F172A?style=flat-square&amp;logo=tailwindcss&amp;logoColor=38BDF8" alt="Tailwind CSS" />
+  </p>
+  <p>
+    <a href="#overview">Overview</a> ·
+    <a href="#capabilities">Capabilities</a> ·
+    <a href="#architecture">Architecture</a> ·
+    <a href="#getting-started">Getting Started</a> ·
+    <a href="#rest-api">API</a>
+  </p>
+</div>
 
-RetailLens AI is a full-stack application that analyzes retail images and recorded videos. It combines a custom YOLOv8 checkpoint with EasyOCR and OpenCV to extract object categories and visible text, then stores analysis results in MongoDB for later review through a React interface.
+---
 
-## Features
+## Overview
 
-- Image analysis from local files, webcam snapshots or accessible HTTP(S) image URLs.
-- Recorded video analysis from local files, webcam recordings or downloadable HTTP(S) video files.
-- Object category detection using the bundled `best.pt` checkpoint.
-- English and Arabic OCR with whitespace normalization and duplicate removal, preserving prices and brand names.
-- Annotated images with YOLO detections and OCR bounding polygons.
-- Video sampling at approximately one frame per second, with a maximum of 120 sampled frames per request.
-- Persistent analysis history, including the 50 most recent image and video records per endpoint.
+**RetailLens AI** is a full-stack computer vision application originally developed during my **2025 summer internship at VisShopAI**. It brings together object detection, multilingual optical character recognition (OCR), and image/video processing in a single web interface for retail visual analysis.
+
+The application uses a custom **YOLOv8** checkpoint to identify object categories, **EasyOCR** to extract visible text in English and Arabic, and **OpenCV** to preprocess images and sample video frames. A Django REST API coordinates inference, while MongoDB stores structured analysis records and React provides an interactive interface for reviewing results.
+
+This repository contains the internship project and subsequent improvements to its architecture, configuration, validation, tests, and documentation.
+
+<div align="center">
+  <img src="https://thumb.wikimedia.org/wikipedia/commons/thumb/4/41/Supermarket_shelves.jpg/960px-Supermarket_shelves.jpg" width="780" alt="Example retail environment with stocked shelves, product packaging and shelf labels" />
+  <p><em>Retail environment — illustrative input, not an application screenshot or model prediction.</em></p>
+  <sub>Photo: <a href="https://commons.wikimedia.org/wiki/File:Supermarket_shelves.jpg">Supermarket shelves</a> by Frankie Fouganthin, <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC BY-SA 4.0</a> (displayed at reduced size).</sub>
+</div>
+
+## Capabilities
+
+| Capability | Description |
+| --- | --- |
+| **Object detection** | Identify object categories with the bundled YOLOv8 checkpoint and visualize detections on images. |
+| **Multilingual OCR** | Extract English and Arabic text while preserving numbers, brand names and prices during normalization. |
+| **Image acquisition** | Analyze local image files, webcam snapshots and accessible HTTP(S) image URLs. |
+| **Video analysis** | Process uploaded videos, webcam recordings and accessible downloadable video URLs. |
+| **Frame sampling** | Extract approximately one frame per second, capped at 120 frames per request. |
+| **Visual results** | Review annotated images with detection boxes and OCR polygons, or inspect video-frame results. |
+| **Analysis history** | Store results in MongoDB and retrieve the 50 most recent records for each media type. |
 
 ## Architecture
 
 ```mermaid
-flowchart LR
-    A[Image or recorded video] --> B[React frontend]
-    B --> C[Django REST API]
-    C --> D[OpenCV preprocessing and frame extraction]
-    D --> E[YOLOv8 inference]
-    D --> F[EasyOCR inference]
-    E --> G[Analysis results]
-    F --> G
-    G --> H[(MongoDB)]
-    G --> I[Local media storage]
-    G --> B
-    H --> C
+flowchart TD
+    A[Local files / Webcam / HTTP URLs] --> B[React Web Interface]
+    B -->|Multipart HTTP request| C[Django REST API]
+    C --> D[Media validation and storage]
+    D --> E[OpenCV preprocessing / frame extraction]
+    E --> F[YOLOv8 Object Detection]
+    E --> G[EasyOCR Text Recognition]
+    F --> H[Result aggregation]
+    G --> H
+    H --> I[(MongoDB)]
+    H --> J[Local media files]
+    H -->|JSON response| B
+    I -->|Analysis history| C
+    C -->|History API| B
 ```
 
-The API processes uploads synchronously. Models are loaded lazily and reused within each backend process. MongoDB stores structured analysis records; media files remain on the local filesystem. Django's built-in admin and authentication tables use SQLite.
+### Processing pipeline
+
+1. **Acquisition:** the user uploads an image/video or captures media through the webcam.
+2. **Validation:** the backend checks the upload format and size before saving it.
+3. **Preprocessing:** OpenCV prepares images and extracts frames from recorded videos.
+4. **Inference:** YOLOv8 detects objects and EasyOCR extracts visible text. Models are loaded lazily and reused within each backend process.
+5. **Persistence:** MongoDB stores structured results; original and generated media remain on the local filesystem.
+6. **Presentation:** React displays the analysis and provides access to the history page.
 
 ## Technology stack
 
-| Layer | Technologies |
-| --- | --- |
-| Frontend | React, React Router, Tailwind CSS, React Webcam |
-| Backend | Python, Django, Django REST Framework |
-| Object detection | Ultralytics YOLOv8 |
-| OCR | EasyOCR (English and Arabic) |
-| Image and video processing | OpenCV |
-| Persistence | MongoDB, PyMongo, SQLite (Django internal tables) |
+| Layer | Technologies | Responsibility |
+| --- | --- | --- |
+| Frontend | React, React Router, Tailwind CSS, React Webcam | Media acquisition, visualization, history |
+| Backend | Python, Django, Django REST Framework | HTTP API, orchestration, validation |
+| Computer vision | Ultralytics YOLOv8, OpenCV | Object detection and media processing |
+| Text recognition | EasyOCR | English and Arabic OCR |
+| Data layer | MongoDB, PyMongo | Structured analysis records |
+| Internal Django storage | SQLite | Built-in Django tables |
 
 ## Repository structure
 
 ```text
-retaillens-ai/
-├── public/                      # Web application entry point
+RetailLens-AI/
+├── public/                     # Web application entry point
 ├── src/
-│   ├── api.js                   # Shared HTTP client
-│   ├── components/              # Upload, webcam and result UI
-│   ├── pages/                   # Analysis history
+│   ├── assets/                 # Existing visual assets
+│   ├── components/             # Media input and analysis UI
+│   ├── pages/                  # Analysis history
+│   ├── api.js                  # Shared HTTP client
 │   └── backend/
-│       ├── backend/             # Django configuration
+│       ├── backend/            # Django settings and routing
 │       ├── vision/
-│       │   ├── best.pt          # Bundled detection checkpoint
-│       │   ├── database.py      # MongoDB access
-│       │   ├── inference.py     # Shared model loading and inference
-│       │   ├── services.py      # Image and video analysis
-│       │   ├── storage.py       # Media storage helpers
-│       │   ├── utils/           # OCR normalization
-│       │   ├── video_utils/     # Frame extraction and inference helpers
-│       │   ├── views.py         # API endpoints
-│       │   └── tests.py         # Backend tests
-│       ├── manage.py
+│       │   ├── best.pt         # Bundled YOLO checkpoint
+│       │   ├── inference.py    # Shared AI models
+│       │   ├── services.py     # Image and video analysis
+│       │   ├── database.py     # MongoDB access
+│       │   ├── storage.py      # Media storage
+│       │   ├── utils/          # OCR normalization
+│       │   ├── video_utils/    # Frame extraction and inference
+│       │   ├── views.py        # REST endpoints
+│       │   └── tests.py        # Backend tests
 │       ├── requirements.txt
-│       └── .env.example
-├── experiments/                # Legacy PaddleOCR experiment (not part of API)
-├── .env.example                 # Frontend API configuration
+│       ├── .env.example
+│       └── manage.py
+├── experiments/               # Legacy PaddleOCR experiment
+├── .env.example
 ├── package.json
 └── README.md
 ```
@@ -78,34 +126,43 @@ retaillens-ai/
 
 ### Prerequisites
 
-- Python 3.11 or 3.12 recommended.
-- Node.js 20 or 22 and npm.
-- A running MongoDB instance, local or remote.
-- Internet access on the first EasyOCR initialization to download model files.
+- Python 3.11 or 3.12 recommended
+- Node.js 20 or 22 and npm
+- A running MongoDB instance (or Docker for local setup)
+- Internet access for the initial EasyOCR model download
 
-The instructions below use Windows PowerShell and assume the terminal is at the repository root. Only load the bundled checkpoint if you trust its origin; PyTorch model checkpoints can contain executable serialized content.
+The commands below use **Windows PowerShell**.
 
-### 1. Start MongoDB
+### 1. Clone the repository
 
-Use an existing local MongoDB service, or start a development container if Docker is installed:
+```powershell
+git clone https://github.com/medaminesalhi/RetailLens-AI.git
+cd RetailLens-AI
+```
+
+### 2. Start MongoDB
+
+Use an existing MongoDB service, or start a local development container:
 
 ```powershell
 docker run -d --name retaillens-mongo -p 127.0.0.1:27017:27017 -v retaillens-mongo-data:/data/db mongo:7
 ```
 
-Skip this command if MongoDB is already available. The container configuration is intended for local development only.
+Skip this command if MongoDB is already running. This Docker configuration is for local development only.
 
-### 2. Configure the backend
+### 3. Configure and run the backend
+
+From the repository root:
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
-pip install -r src/backend/requirements.txt
+python -m pip install -r src/backend/requirements.txt
 Copy-Item src/backend/.env.example src/backend/.env
 python -c "import secrets; print(secrets.token_urlsafe(50))"
 ```
 
-Copy the generated secret into `DJANGO_SECRET_KEY` in `src/backend/.env`. Do not commit the `.env` file. Adjust `MONGO_URI` if using another MongoDB server.
+Add the generated secret to `DJANGO_SECRET_KEY` in `src/backend/.env`. Set `MONGO_URI` if your MongoDB instance is not local. Never commit `.env` files. Only load the bundled model checkpoint if you trust its origin, as PyTorch checkpoints may contain executable serialized content.
 
 ```powershell
 cd src/backend
@@ -114,11 +171,13 @@ python manage.py check
 python manage.py runserver
 ```
 
-The backend runs at `http://localhost:8000`. CPU inference is the default; configure `YOLO_DEVICE` and `OCR_GPU` only if a compatible GPU runtime is installed.
+Backend: <http://localhost:8000>
 
-### 3. Start the frontend
+CPU inference is the default. GPU inference requires a compatible runtime and appropriate `YOLO_DEVICE` / `OCR_GPU` settings.
 
-Open another terminal at the repository root:
+### 4. Run the frontend
+
+Open a second terminal at the repository root:
 
 ```powershell
 Copy-Item .env.example .env
@@ -126,24 +185,28 @@ npm ci
 npm start
 ```
 
-Open `http://localhost:3000`. The analysis history is available at `/historique`.
+| Service | Local URL |
+| --- | --- |
+| Web application | <http://localhost:3000> |
+| Analysis history | <http://localhost:3000/historique> |
+| Django API | <http://localhost:8000/api/> |
 
 ## REST API
 
-| Method | Endpoint | Input / output |
+| Method | Endpoint | Purpose |
 | --- | --- | --- |
-| POST | `/api/process-image/` | Multipart `image`, optional `source`; annotated image, categories, OCR text |
-| POST | `/api/process-video/` | Multipart `video`; video URL, sampled frames and truncation flag |
-| GET | `/api/history-images/` | Latest image records |
-| GET | `/api/history-videos/` | Latest video records |
+| `POST` | `/api/process-image/` | Upload an `image` and optionally specify `source`; return detections and OCR. |
+| `POST` | `/api/process-video/` | Upload a `video`; return sampled-frame analysis and truncation status. |
+| `GET` | `/api/history-images/` | Retrieve recent image analysis records. |
+| `GET` | `/api/history-videos/` | Retrieve recent video analysis records. |
 
-Example image request (replace `sample.jpg` with a real image):
+### Example image analysis
 
 ```powershell
 curl.exe -X POST -F "image=@sample.jpg" -F "source=local" http://localhost:8000/api/process-image/
 ```
 
-Illustrative response (not a measured model result):
+Illustrative response structure (not measured inference output):
 
 ```json
 {
@@ -153,32 +216,60 @@ Illustrative response (not a measured model result):
 }
 ```
 
-Supported image uploads: JPEG, PNG, WebP, up to 10 MiB. Video extensions: MP4, WebM, AVI, MOV and MKV, up to 100 MiB; decoding also depends on the OpenCV codecs installed. URL imports require browser access and appropriate CORS headers. Continuous IP-camera streams are not supported by this implementation.
+Supported images: JPEG, PNG and WebP (up to 10 MiB). Supported video extensions: MP4, WebM, AVI, MOV and MKV (up to 100 MiB), subject to installed codecs. URL imports require browser access and appropriate CORS headers. Continuous IP-camera streams are not supported.
 
-## Testing
+## Testing and validation
 
-Backend tests cover OCR normalization, invalid/missing uploads and a mocked history response, without running model inference or requiring MongoDB.
+Backend tests cover OCR normalization, missing/invalid uploads and a mocked history response. They do not require live MongoDB or run AI inference.
 
 ```powershell
 cd src/backend
 python manage.py test vision
 ```
 
-From the repository root, run the React smoke test and production build:
+From the repository root:
 
 ```powershell
 npm test -- --watchAll=false
 npm run build
 ```
 
-For end-to-end validation, upload a sample image and a short video, inspect the output, and verify that both records appear on the history page.
+For end-to-end validation, upload a sample image and a short video, inspect their results, and confirm that both appear in the history interface.
 
-## Limitations and roadmap
+## Project status & roadmap
 
-This repository is a development prototype, not a production-ready service. The supplied snapshot does not include the training dataset, training configuration, class documentation or measured model accuracy. Inference quality must be evaluated on representative retail data. OCR is configured for English and Arabic, not explicitly for French. Processing is synchronous and the API has no application-level access controls or retention policy. Do not expose it publicly as-is.
+This project is a development prototype. The supplied repository includes a model checkpoint but does not include the training dataset, training configuration, class documentation or measured accuracy metrics. The API processes requests synchronously and does not yet implement application-level access controls or media retention policies. It should not be exposed publicly as-is.
 
-Potential next steps include documenting the training pipeline and metrics, automated CI, background video jobs, authentication, upload hardening, media retention, containerized deployment and GPU benchmarking.
+Planned engineering improvements:
 
-## Author
+- [ ] Document the training dataset, model classes and evaluation metrics (precision, recall, mAP).
+- [ ] Containerize the application with Docker Compose.
+- [ ] Add automated CI checks with GitHub Actions.
+- [ ] Move long-running video inference to background jobs.
+- [ ] Add authentication, media retention and stronger upload security.
+- [ ] Benchmark CPU and GPU inference performance.
 
-Med Amine Salhi
+## Internship & author
+
+<table>
+  <tr>
+    <td width="150" align="center"><img src="src/assets/vv.jpg" width="120" alt="VisShopAI" /></td>
+    <td>
+      <strong>VisShopAI — Summer Internship, 2025</strong><br />
+      Applied AI &amp; Computer Vision for Retail<br />
+      Original internship project, with subsequent repository improvements.
+    </td>
+  </tr>
+</table>
+
+**Med Amine Salhi** — Engineering student in Data Engineering
+
+[![GitHub](https://img.shields.io/badge/GitHub-medaminesalhi-181717?style=flat-square&logo=github)](https://github.com/medaminesalhi)
+
+The VisShopAI logo is included as internship context and does not imply company endorsement of subsequent repository changes. Confirm permission to publish company-related assets and code before public distribution.
+
+---
+
+<div align="center">
+  <sub>RetailLens AI · Applied Computer Vision · Summer Internship 2025</sub>
+</div>
