@@ -10,18 +10,13 @@ from .video_utils.yolo_utils import run_yolo_on_frame
 from .video_utils.ocr_utils import run_ocr_on_frame
 from ultralytics import YOLO
 import easyocr
-import pymongo
+from .database import get_collection
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
 from django.conf import settings
 from .utils.ocr_cleaner import nettoyer_et_corriger_ocr
 import imageio
 
-mongo_settings   = settings.MONGO_CONNECTION
-mongo_client     = pymongo.MongoClient(mongo_settings['HOST'])
-mongo_db         = mongo_client[mongo_settings['DB']]
-image_collection = mongo_db[mongo_settings['IMAGE_COLLECTION']]
-video_collection = mongo_db[mongo_settings['VIDEO_COLLECTION']]
 def extract_frames(video_path, output_dir, frame_rate=1):
     cap = cv2.VideoCapture(video_path)
     count = 0
@@ -51,19 +46,13 @@ yolo_model = YOLO(model_path)
 ocr_reader = easyocr.Reader(['en', 'ar'])
 
 # Connexion MongoDB
-import pymongo
 from django.conf import settings
 
 # 1) Récupère la config depuis settings
-mongo_settings = settings.MONGO_CONNECTION
 
 # 2) Crée le client et la base
-mongo_client = pymongo.MongoClient(mongo_settings["HOST"])
-mongo_db     = mongo_client[mongo_settings["DB"]]
 
 # 3) Sélectionne les deux collections
-image_collection = mongo_db[mongo_settings["IMAGE_COLLECTION"]]
-video_collection = mongo_db[mongo_settings["VIDEO_COLLECTION"]]
 
 @api_view(['POST'])
 @parser_classes([MultiPartParser])
@@ -117,7 +106,7 @@ def process_image(request):
         cv2.imwrite(output_path, cv2.cvtColor(image_rgb, cv2.COLOR_RGB2BGR))
 
         # === 6. Enregistrement MongoDB ===
-        image_collection.insert_one({
+        get_collection("image").insert_one({
             "date":       datetime.datetime.now(),
             "source":     source,                       # ex: "frontend"
             "image_path": f"{settings.MEDIA_URL}{filename}",
@@ -144,15 +133,10 @@ from django.http import JsonResponse
 from django.conf import settings
 from .video_utils.yolo_utils import run_yolo_on_frame
 from .video_utils.ocr_utils  import run_ocr_on_frame
-import pymongo
 
 # connexion MongoDB
-mongo_settings   = settings.MONGO_CONNECTION
-mongo_client     = pymongo.MongoClient(mongo_settings['HOST'])
-mongo_db         = mongo_client[mongo_settings['DB']]
 
 # collection pour les vidéos
-video_collection = mongo_db[mongo_settings['VIDEO_COLLECTION']]
 
 @csrf_exempt
 def process_video(request):
@@ -203,7 +187,7 @@ def process_video(request):
     cap.release()
 
     # 3) Enregistrement dans MongoDB
-    video_collection.insert_one({
+    get_collection("video").insert_one({
         "date":      datetime.datetime.now(),
         "video_url": f"{settings.MEDIA_URL}videos/{video_name}",
         "frames":    frames
@@ -217,21 +201,15 @@ def process_video(request):
 from django.http import JsonResponse
 from django.conf import settings
 import datetime
-import pymongo
 
 # --- connexion MongoDB existante ---
-mongo_settings   = settings.MONGO_CONNECTION
-mongo_client     = pymongo.MongoClient(mongo_settings['HOST'])
-mongo_db         = mongo_client[mongo_settings['DB']]
-image_collection = mongo_db[mongo_settings['IMAGE_COLLECTION']]
-video_collection = mongo_db[mongo_settings['VIDEO_COLLECTION']]
 
 
 from django.views.decorators.http import require_GET
 
 @require_GET
 def history_images(request):
-    docs = list(image_collection.find().sort('date', -1))
+    docs = list(get_collection("image").find().sort('date', -1))
     results = []
     for d in docs:
         results.append({
@@ -246,7 +224,7 @@ def history_images(request):
 
 @require_GET
 def history_videos(request):
-    docs = list(video_collection.find().sort('date', -1))
+    docs = list(get_collection("video").find().sort('date', -1))
     results = []
     for d in docs:
         results.append({

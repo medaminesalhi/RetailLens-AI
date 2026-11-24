@@ -107,11 +107,6 @@ AUTH_PASSWORD_VALIDATORS = [
         "NAME": "django.contrib.auth.password_validation.NumericPasswordValidator",
     },
 ]
-MONGO_CONNECTION = {
-    "HOST": "mongodb://localhost:27017",  # adapte si besoin
-    "DB": "retailvision",
-    "COLLECTION": "results"
-}
 
 
 
@@ -144,15 +139,10 @@ CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [
     *os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(","),
 ]
-MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'media'
-
-
-# settings.py
 
 MONGO_CONNECTION = {
-    "HOST": "mongodb://localhost:27017",   # URL de votre serveur MongoDB
-    "DB": "retailvision",                   # Nom de votre base de données
+    "HOST": os.getenv("MONGO_URI", "mongodb://localhost:27017"),
+    "DB": os.getenv("MONGO_DB", "retailvision"),
     "IMAGE_COLLECTION": "results",          # Collection pour les images
     "VIDEO_COLLECTION": "video_results",    # Collection pour les vidéos
 }
