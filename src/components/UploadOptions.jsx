@@ -21,7 +21,16 @@ const UploadOptions = () => {
   const [showVideoUploader, setShowVideoUploader] = useState(false);
   const [showVideoFromIP, setShowVideoFromIP]     = useState(false);
   
-  const [selectedVideoData, setSelectedVideoData] = useState({ file: null, url: null });
+  const [imagePreview, setImagePreview] = useState(null);
+  useEffect(() => {
+    if (!selectedImage || typeof selectedImage === 'string') {
+      setImagePreview(selectedImage);
+      return;
+    }
+    const url = URL.createObjectURL(selectedImage);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [selectedImage]);
 
   // fichier et URL pour preview
   const [selectedVideoFile, setSelectedVideoFile] = useState(null);
@@ -106,10 +115,7 @@ const UploadOptions = () => {
       {showIpImage     && <ImageFromIP    onImageReady={setSelectedImage}/>}
       {showVideoCapture && (
   <VideoCapture
-    onVideoReady={(file) => {
-      setSelectedVideoFile(file);
-      setSelectedVideoURL(URL.createObjectURL(file));
-    }}
+    onVideoReady={setSelectedVideoFile}
   />
 )}
 
@@ -119,7 +125,7 @@ const UploadOptions = () => {
       {/* PRÉVIEW + BOUTONS */}
       {selectedImage && (
         <div className="mt-6 text-center">
-          <img src={selectedImage} className="max-w-xs rounded shadow mb-4" />
+          <img src={imagePreview || undefined} alt="Image sélectionnée" className="max-w-xs rounded shadow mb-4" />
           <button onClick={handleAnalyzeImage} className="bg-blue-700 text-white px-6 py-2 rounded">
             Analyser l’image
           </button>
@@ -141,7 +147,7 @@ const UploadOptions = () => {
           <p><strong>Catégories :</strong> {imageResult.categories.join(', ')}</p>
           <p><strong>OCR :</strong> {imageResult.ocr_text.join(', ')}</p>
           <img src={mediaUrl(imageResult.image_path)}
-               className="mt-4 rounded w-full" />
+               alt="Image analysée" className="mt-4 rounded w-full" />
         </div>
       )}
 
@@ -155,7 +161,7 @@ const UploadOptions = () => {
             {videoResult.frames.map((f,i)=>(
               <div key={i} className="bg-gray-50 p-3 rounded shadow">
                 <img src={mediaUrl(f.frame)}
-                     className="w-full rounded mb-2"/>
+                     alt={`Frame ${i + 1}`} className="w-full rounded mb-2"/>
                 <p><strong>Catégories :</strong> {f.yolo.join(', ')}</p>
                 <p><strong>OCR :</strong> {f.ocr.join(', ')}</p>
               </div>

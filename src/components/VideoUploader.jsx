@@ -1,11 +1,9 @@
-import React, { useState } from 'react';
+import React from 'react';
 
 const VideoUploader = ({ onVideoReady }) => {
-  const [videoFile, setVideoFile] = useState(null);
 
   const handleVideoChange = (e) => {
     const file = e.target.files[0];
-    setVideoFile(file);
     onVideoReady(file);
   };
 

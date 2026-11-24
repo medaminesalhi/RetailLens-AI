@@ -20,7 +20,7 @@ const ImageUploader = ({ onImageReady }) => {
       const reader = new FileReader();
       reader.onloadend = () => {
         setPreview(reader.result);
-        onImageReady(reader.result); // ✅ transmet l'image au parent
+        onImageReady(file);
       };
       reader.readAsDataURL(file);
     }
