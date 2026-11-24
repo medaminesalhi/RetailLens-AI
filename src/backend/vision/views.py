@@ -8,8 +8,7 @@ import datetime
 import cv2
 from .video_utils.yolo_utils import run_yolo_on_frame
 from .video_utils.ocr_utils import run_ocr_on_frame
-from ultralytics import YOLO
-import easyocr
+from .inference import detect, read_text
 from .database import get_collection
 from django.views.decorators.csrf import csrf_exempt
 from django.http import JsonResponse
@@ -38,12 +37,6 @@ def extract_frames(video_path, output_dir, frame_rate=1):
 
     cap.release()
     return saved_paths
-# Charger YOLO
-model_path = os.path.join(os.path.dirname(__file__), "best.pt")
-yolo_model = YOLO(model_path)
-
-# Charger OCR
-ocr_reader = easyocr.Reader(['en', 'ar'])
 
 # Connexion MongoDB
 from django.conf import settings
@@ -73,9 +66,7 @@ def process_image(request):
                 f.write(chunk)
 
         # === 2. YOLOv8 Detection ===
-        yolo_result = yolo_model(save_path)[0]
-        class_ids = yolo_result.boxes.cls.tolist() if yolo_result.boxes is not None else []
-        categories = list(set([yolo_model.names[int(cls)] for cls in class_ids]))
+        categories, _ = detect(save_path)
 
         # === 3. OCR Prétraitement avec OpenCV ===
         image = cv2.imread(save_path)
@@ -84,7 +75,7 @@ def process_image(request):
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
         # === 4. OCR Lecture ===
-        results = ocr_reader.readtext(image_rgb)
+        results = read_text(image_rgb)
         ocr_raw_list = []
 
         for (bbox, text, prob) in results:
