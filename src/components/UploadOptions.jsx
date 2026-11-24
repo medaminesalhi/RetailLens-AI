@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { apiRequest, mediaUrl } from '../api';
 import WebcamCapture   from './WebcamCapture';
 import ImageUploader   from './ImageUploader';
 import ImageFromIP     from './ImageFromIP';
@@ -53,12 +54,7 @@ const UploadOptions = () => {
     }
     fd.append('source', 'frontend');
 
-    const res = await fetch('http://localhost:8000/api/process-image/', {
-      method: 'POST',
-      body: fd
-    });
-    if (!res.ok) return alert("Erreur au traitement de l'image");
-    const json = await res.json();
+    const json = await apiRequest('process-image/', { method: 'POST', body: fd });
     setImageResult(json);
   };
 
@@ -68,16 +64,7 @@ const UploadOptions = () => {
     const fd = new FormData();
     fd.append('video', selectedVideoFile);
 
-    const res = await fetch('http://localhost:8000/api/process-video/', {
-      method: 'POST',
-      body: fd
-    });
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      console.error("Backend video error", err);
-      return alert("Erreur au traitement vidéo");
-    }
-    const json = await res.json();
+    const json = await apiRequest('process-video/', { method: 'POST', body: fd });
     setVideoResult(json);
   };
 
@@ -153,7 +140,7 @@ const UploadOptions = () => {
           <h3 className="text-xl font-semibold mb-4">✅ Résultat Image</h3>
           <p><strong>Catégories :</strong> {imageResult.categories.join(', ')}</p>
           <p><strong>OCR :</strong> {imageResult.ocr_text.join(', ')}</p>
-          <img src={`http://localhost:8000${imageResult.image_path}`}
+          <img src={mediaUrl(imageResult.image_path)}
                className="mt-4 rounded w-full" />
         </div>
       )}
@@ -162,12 +149,12 @@ const UploadOptions = () => {
       {videoResult?.frames?.length > 0 && (
         <div className="mt-8 bg-white p-6 rounded shadow max-w-5xl">
           <h3 className="text-xl font-semibold mb-4">🎯 Résultats Vidéo</h3>
-          <video src={`http://localhost:8000${videoResult.video_url}`}
+          <video src={mediaUrl(videoResult.video_url)}
                  controls className="w-full rounded mb-6"/>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
             {videoResult.frames.map((f,i)=>(
               <div key={i} className="bg-gray-50 p-3 rounded shadow">
-                <img src={`http://localhost:8000${f.frame}`}
+                <img src={mediaUrl(f.frame)}
                      className="w-full rounded mb-2"/>
                 <p><strong>Catégories :</strong> {f.yolo.join(', ')}</p>
                 <p><strong>OCR :</strong> {f.ocr.join(', ')}</p>

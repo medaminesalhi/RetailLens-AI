@@ -1,5 +1,6 @@
 // src/pages/HistoriquePage.jsx
 import React, { useEffect, useState } from 'react';
+import { apiRequest, mediaUrl } from '../api';
 
 export default function HistoriquePage() {
   const [videos, setVideos] = useState([]);
@@ -8,14 +9,12 @@ export default function HistoriquePage() {
   // Exemple de fetch historique depuis votre API
   useEffect(() => {
     // 1) Récupérer historique images
-    fetch('http://localhost:8000/api/history-images/')
-      .then(r => r.json())
+    apiRequest('history-images/')
       .then(data => setImages(data))
       .catch(console.error);
 
     // 2) Récupérer historique vidéos
-    fetch('http://localhost:8000/api/history-videos/')
-      .then(r => r.json())
+    apiRequest('history-videos/')
       .then(data => setVideos(data))
       .catch(console.error);
   }, []);
@@ -29,7 +28,7 @@ export default function HistoriquePage() {
           <h3 className="text-xl mb-2">Images analysées</h3>
           {images.map((img, i) => (
             <div key={i} className="mb-4 p-4 bg-gray-50 rounded shadow">
-              <img src={`http://localhost:8000${img.image_path}`} alt="" className="w-full rounded" />
+              <img src={mediaUrl(img.image_path)} alt="" className="w-full rounded" />
               <p><strong>Catégories :</strong> {img.categories.join(', ')}</p>
               <p><strong>OCR :</strong> {img.ocr_text.join(', ')}</p>
             </div>
@@ -41,11 +40,11 @@ export default function HistoriquePage() {
           <h3 className="text-xl mb-2">Vidéos analysées</h3>
           {videos.map((vid, i) => (
             <div key={i} className="mb-6 p-4 bg-gray-50 rounded shadow">
-              <video src={`http://localhost:8000${vid.video_url}`} controls className="w-full rounded mb-2" />
+              <video src={mediaUrl(vid.video_url)} controls className="w-full rounded mb-2" />
               <div className="grid grid-cols-3 gap-2">
                 {vid.frames.map((f, j) => (
                   <div key={j}>
-                    <img src={`http://localhost:8000${f.frame}`} alt={`Frame ${j}`} className="w-full rounded" />
+                    <img src={mediaUrl(f.frame)} alt={`Frame ${j}`} className="w-full rounded" />
                     <p className="text-sm"><strong>{f.yolo.join(', ')}</strong></p>
                     <p className="text-xs">{f.ocr.join(', ')}</p>
                   </div>
