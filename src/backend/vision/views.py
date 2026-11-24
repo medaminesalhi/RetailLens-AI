@@ -11,6 +11,12 @@ from .services import analyze_image, analyze_video, InvalidMedia
 from .storage import save_upload, media_url
 
 logger = logging.getLogger(__name__)
+IMAGE_TYPES = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
+VIDEO_EXTENSIONS = {".mp4", ".webm", ".avi", ".mov", ".mkv"}
+
+
+def validate_size(upload, megabytes):
+    return 0 < upload.size <= megabytes * 1024 * 1024
 
 
 @api_view(["POST"])
@@ -19,8 +25,14 @@ def process_image(request):
     upload = request.FILES.get("image")
     if not upload:
         return JsonResponse({"error": "Aucune image reçue."}, status=400)
+    suffix = IMAGE_TYPES.get(upload.content_type)
+    if not suffix:
+        return JsonResponse({"error": "Format image non pris en charge."}, status=415)
+    if not validate_size(upload, 10):
+        return JsonResponse({"error": "Image vide ou supérieure à 10 Mio."}, status=413)
+    path = None
     try:
-        path, original_url = save_upload(upload, "images", ".jpg")
+        path, original_url = save_upload(upload, "images", suffix)
         output, categories, text = analyze_image(path)
         result = {"image_path": media_url(output.relative_to(Path(settings.MEDIA_ROOT))),
                   "categories": categories, "ocr_text": text}
@@ -28,6 +40,8 @@ def process_image(request):
             "date": timezone.now(), "source": request.POST.get("source", "unknown")})
         return JsonResponse(result)
     except InvalidMedia as exc:
+        if path is not None:
+            path.unlink(missing_ok=True)
         return JsonResponse({"error": str(exc)}, status=400)
     except Exception:
         logger.exception("Image analysis failed")
@@ -40,14 +54,21 @@ def process_video(request):
     upload = request.FILES.get("video")
     if not upload:
         return JsonResponse({"error": "Aucune vidéo reçue."}, status=400)
+    suffix = Path(upload.name).suffix.lower()
+    if suffix not in VIDEO_EXTENSIONS:
+        return JsonResponse({"error": "Format vidéo non pris en charge."}, status=415)
+    if not validate_size(upload, 100):
+        return JsonResponse({"error": "Vidéo vide ou supérieure à 100 Mio."}, status=413)
+    path = None
     try:
-        suffix = Path(upload.name).suffix.lower() or ".mp4"
         path, url = save_upload(upload, "videos", suffix)
         frames, truncated = analyze_video(path, Path(settings.MEDIA_ROOT) / "frames" / path.stem)
         result = {"video_url": url, "frames": frames, "truncated": truncated}
         get_collection("video").insert_one({**result, "date": timezone.now()})
         return JsonResponse(result)
     except InvalidMedia as exc:
+        if path is not None:
+            path.unlink(missing_ok=True)
         return JsonResponse({"error": str(exc)}, status=400)
     except Exception:
         logger.exception("Video analysis failed")
