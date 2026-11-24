@@ -9,9 +9,9 @@ export default function HeroSection() {
       <div className="container mx-auto flex items-center justify-between">
         {/* Logo & Titre */}
         <div className="flex items-center space-x-3">
-          <img src={logo} alt="VisShop AI" className="h-12 w-auto" />
+          <img src={logo} alt="RetailLens AI" className="h-12 w-auto" />
           <span className="text-white text-2xl font-extrabold tracking-tight">
-            VisShop AI
+            RetailLens AI
           </span>
         </div>
 
