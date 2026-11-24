@@ -28,3 +28,23 @@ def analyze_image(path):
     if not cv2.imwrite(str(output), annotated):
         raise OSError("Could not save annotated image")
     return output, categories, nettoyer_et_corriger_ocr(raw)
+
+
+def analyze_video(path, frame_dir):
+    from .video_utils.frames import extract_frames
+    from .video_utils.yolo_utils import run_yolo_on_frame
+    from .video_utils.ocr_utils import run_ocr_on_frame
+    from .storage import media_url
+    from django.conf import settings
+
+    try:
+        paths, truncated = extract_frames(path, frame_dir)
+    except ValueError as exc:
+        raise InvalidMedia(str(exc)) from exc
+    frames = [
+        {"frame": media_url(frame.relative_to(Path(settings.MEDIA_ROOT))),
+         "yolo": run_yolo_on_frame(str(frame)),
+         "ocr": run_ocr_on_frame(str(frame))}
+        for frame in paths
+    ]
+    return frames, truncated
