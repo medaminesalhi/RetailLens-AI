@@ -50,9 +50,15 @@ const UploadOptions = () => {
     return () => URL.revokeObjectURL(url);
   }, [selectedVideoFile]);
 
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
   // === ANALYSE IMAGE ===
   const handleAnalyzeImage = async () => {
     if (!selectedImage) return alert("Aucune image sélectionnée.");
+    setBusy(true);
+    setError('');
+    try {
     const fd = new FormData();
     if (typeof selectedImage === 'string') {
       const r = await fetch(selectedImage);
@@ -65,16 +71,21 @@ const UploadOptions = () => {
 
     const json = await apiRequest('process-image/', { method: 'POST', body: fd });
     setImageResult(json);
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
 
   // === ANALYSE VIDÉO ===
   const handleAnalyzeVideo = async () => {
     if (!selectedVideoFile) return alert("Aucune vidéo sélectionnée.");
+    setBusy(true);
+    setError('');
+    try {
     const fd = new FormData();
     fd.append('video', selectedVideoFile);
 
     const json = await apiRequest('process-video/', { method: 'POST', body: fd });
     setVideoResult(json);
+    } catch (err) { setError(err.message); } finally { setBusy(false); }
   };
 
   return (
@@ -82,7 +93,7 @@ const UploadOptions = () => {
       <img src={logo} alt="Logo" className="w-40 mb-6 rounded shadow" />
       <h2 className="text-3xl font-bold mb-2">Choisissez une méthode d'import</h2>
       <p className="mb-10 text-gray-600 text-center max-w-xl">
-        Importez une image ou une vidéo pour détecter automatiquement catégories, promotions et zones.
+        Importez une image ou une vidéo pour détecter des catégories visuelles et extraire le texte visible.
       </p>
 
       {/* BLOCS D’IMPORT */}
@@ -122,20 +133,21 @@ const UploadOptions = () => {
       {showVideoUploader&&<VideoUploader  onVideoReady={setSelectedVideoFile}/>}
       {showVideoFromIP && <VideoFromIP    onVideoReady={setSelectedVideoFile}/>}
 
+      {error && <p role="alert" className="text-red-700 mt-4">{error}</p>}
       {/* PRÉVIEW + BOUTONS */}
       {selectedImage && (
         <div className="mt-6 text-center">
           <img src={imagePreview || undefined} alt="Image sélectionnée" className="max-w-xs rounded shadow mb-4" />
-          <button onClick={handleAnalyzeImage} className="bg-blue-700 text-white px-6 py-2 rounded">
-            Analyser l’image
+          <button onClick={handleAnalyzeImage} disabled={busy} className="bg-blue-700 text-white px-6 py-2 rounded">
+            {busy ? 'Analyse en cours…' : 'Analyser l’image'}
           </button>
         </div>
       )}
       {selectedVideoURL && (
         <div className="mt-6 text-center w-full max-w-lg">
           <video src={selectedVideoURL} controls className="w-full rounded mb-4"/>
-          <button onClick={handleAnalyzeVideo} className="bg-green-600 text-white px-6 py-2 rounded">
-            Analyser la vidéo
+          <button onClick={handleAnalyzeVideo} disabled={busy} className="bg-green-600 text-white px-6 py-2 rounded">
+            {busy ? 'Analyse en cours…' : 'Analyser la vidéo'}
           </button>
         </div>
       )}
@@ -155,6 +167,7 @@ const UploadOptions = () => {
       {videoResult?.frames?.length > 0 && (
         <div className="mt-8 bg-white p-6 rounded shadow max-w-5xl">
           <h3 className="text-xl font-semibold mb-4">🎯 Résultats Vidéo</h3>
+          {videoResult.truncated && <p>Analyse limitée aux 120 premières images échantillonnées.</p>}
           <video src={mediaUrl(videoResult.video_url)}
                  controls className="w-full rounded mb-6"/>
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
