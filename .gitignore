@@ -27,3 +27,12 @@ staticfiles/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Local Python environments and tools
+.venv/
+venv/
+ocr_env/
+.pytest_cache/
+.vscode/
+.idea/
+!.env.example
